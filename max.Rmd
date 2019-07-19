@@ -1,0 +1,77 @@
+---
+title: "Healthcare in the US"
+author: "Group 2 - Rui Ying, Nathan Berryhill, Amy Fang, Max Lau"
+resource_files:
+- .Renviron
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+runtime: shiny
+---
+#Introduction
+For this project, we chose a dataset on healthcare because healthcare costs are a source of much strife in both the political realm and the lives of millions of Americans. Our motivation is that we want to visualize how much Americans are paying for their healthcare, which states tend to pay the most, and possible drivers of healthcare costs, like insurance coverage and actual diagnoses and conditions. 
+
+Specifically, we wanted to show how healthcare costs vary around the country, depending on the condition treated, as well as the amount covered by insurance, paid out of pocket, and covered by Medicare. Throughout this document, we aim to discern a relationship between location and healthcare costs.
+
+The maps and the bar chart show which states have the highest total payments. The boxplot explores which diagnosis-related groups cost the most in the United Staes. The histogram displays which price range contains the most instances of covered charges. The crosstab shows the percentage of total payments that is covered by insurance.
+
+#Load Packages
+This [code chunk](http://rmarkdown.rstudio.com/authoring_rcodechunks.html) loads the packages required to run the R code in the document.
+The last line of this code chunk enables document caching, which is expalined at this [link](http://rmarkdown.rstudio.com/authoring_rcodechunks.html).
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(shiny)
+library(grid)
+library(data.world)
+library(DT)
+library(shinydashboard)
+library(plotly)
+library(lubridate)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("DataA.R", local = TRUE)
+
+```
+
+
+## Crosstab - Percentage of Payment Covered By Insurance
+To explore detailed relationship between covered charges and total payment, we made a crosstab by creating a KPI -  percentage of payment that covered by the insurance (sum of covered charge/sum of total payment). The x axis is the top 10 diagnosis definitions that we obtain from boxplots. The y axis is the states. The numbers in the textbox are percentage of payment that covered by the insurance in each state for each diagnosis. 
+
+It is interesting to find that in most states, the payment for those expensive diagnosis are mostly(above 70%) covered by the insurance. However, only 52% payment of 329 - MAJOR SMALL & LARGE BOWEL PROCEDURES W MCC is covered by the insurance in Maryland. It means patients need to pay out-of- pocket for the rest 48% of the total payment. (The crosstab in R only shows five diagnosis, so please look at the Tableau iframe we attached below as a supplement)
+
+```{r}
+inputPanel(sliderInput("selectDrg", label = "Select discharge: ", min=0, max=162000, value=c(100000,162000), step=1000))
+```
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Crosstab", tabName = "crosstab", icon = icon("dashboard"))
+     
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      tabItem(tabName = "crosstab",
+        p(),
+        source("Crosstab1UI.R",local = TRUE)$value
+      
+      )
+    )
+  )
+)
+source("Crosstab1Server.R", local = TRUE)
+
+```

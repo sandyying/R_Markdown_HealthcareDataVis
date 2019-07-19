@@ -1,0 +1,202 @@
+---
+title: "Healthcare in the US"
+author: "Group 2 - Rui Ying, Nathan Berryhill, Amy Fang, Max Lau"
+resource_files:
+- .Renviron
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+runtime: shiny
+---
+#Introduction
+For this project, we chose a dataset on healthcare because healthcare costs are a source of much strife in both the political realm and the lives of millions of Americans. Our motivation is that we want to visualize how much Americans are paying for their healthcare, which states tend to pay the most, and possible drivers of healthcare costs, like insurance coverage and actual diagnoses and conditions. 
+
+Specifically, we wanted to show how healthcare costs vary around the country, depending on the condition treated, as well as the amount covered by insurance, paid out of pocket, and covered by Medicare. Throughout this document, we aim to discern a relationship between location and healthcare costs.
+
+The maps and the bar chart show which states have the highest total payments. The boxplot explores which diagnosis-related groups cost the most in the United Staes. The histogram displays which price range contains the most instances of covered charges. The crosstab shows the percentage of total payments that is covered by insurance.
+
+#Load Packages
+This [code chunk](http://rmarkdown.rstudio.com/authoring_rcodechunks.html) loads the packages required to run the R code in the document.
+The last line of this code chunk enables document caching, which is expalined at this [link](http://rmarkdown.rstudio.com/authoring_rcodechunks.html).
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(shiny)
+library(grid)
+library(data.world)
+library(DT)
+library(shinydashboard)
+library(plotly)
+library(lubridate)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Data.world Project, Insight and GitHub Links
+[data.world Link](https://data.world/nrb842/s18-edv-final-project)
+
+[Github Link](https://github.com/CannataUTDV/s18dvfinalproject-fang-berryhill-ying-lau)
+
+```{r}
+
+source("DataSandy1.R", local = TRUE)
+source("DataSandy2.R", local = TRUE)
+source("DataSandy3.R", local = TRUE)
+```
+
+
+
+# Data Visualization
+##Boxplot and Map - Payments
+Using [ggplotly](https://www.rdocumentation.org/packages/plotly/versions/4.7.1/topics/ggplotly) and [shinydashborad](https://rstudio.github.io/shinydashboard/structure.html#dynamic-content-1)
+
+This geomap exhibits the states with highest average total payment for diagnosis. According to the color that appears on the map, we can see nine states and one district, which include California, Washington DC, Florida, Georgia, Illinois, New Jersey, New York, Ohio, Pennsylvania, and Texas, having the highest average total payment.
+
+We wanted to explore this cost more in detail, so we made a bar chart to determine which of those states also contain the highest covered charge payment per capita by executing a join with the Census data. We obtained the number of people with insurance from US Census data and joined this with our data. Next, we divided the total covered payment in each state by the number of people with insurance in every state to obtain the covered payment per capita. To our suprise, these nine states and one district also have the highest covered payment per capita. This was interesting to us, so we narrowed down to explore more on these nine states and one district.
+
+<iframe src="https://public.tableau.com/views/Final_312/Sheet5B?:embed=y&:display_count=yes?:showVizHome=no" width="800" height="500"></iframe>
+
+
+
+
+
+
+##Sandy - Scatter Plot - Avg Total Covered Charge vs. Avg Total Payment
+Our motivation for using a scatter plot is that we wanted to determine what sort of relationship exists between the average total covered charge and the average total payment. Our hypothesis was that we would see a positive correlation/relationship. Interestingly enough, we found that as the average covered payment goes up, the average total payment also increases. In addition, we see that for most diagnosis, the average covered payments are below 500,000 dollars in those nine states. Only few diagnosis costs were extremely high. To explore more on which of these conditions cost more, we created a box plot, which can be found below later.
+```{r}
+inputPanel(sliderInput("selectRange8", label = "Average Medicare Payments: ", min=0, max=158000, value=c(0,158000), step=2000))
+```
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Scatter Plot", tabName = "scatter1", icon = icon("dashboard")),
+       menuItem("Scatter Plot", tabName = "scatter2", icon = icon("dashboard")),
+       menuItem("Scatter Plot", tabName = "scatter3", icon = icon("dashboard"))
+     
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      tabItem(tabName = "scatter1",
+        p(),
+        source("ScatterPlot1UI.R",local = TRUE)$value
+      
+      ),
+      tabItem(tabName = "scatter2",
+        p(),
+        source("ScatterPlot2UI.R",local = TRUE)$value
+      
+      ),
+      tabItem(tabName = "scatter3",
+        p(),
+        source("ScatterPlot3UI.R",local = TRUE)$value
+      
+      )
+      
+    )
+  )
+)
+source("ScatterPlot1Server.R", local = TRUE)
+source("ScatterPlot2Server.R", local = TRUE)
+source("ScatterPlot3Server.R", local = TRUE)
+
+```
+
+
+
+#Appendix
+##Display Session Information
+The [sessionInfo() fuction](https://cran.r-project.org/web/packages/sessioninfo/sessioninfo.pdf) queries and prints information about the current R session including  information about packages, and from where they were installed.
+```{r}
+sessionInfo()
+```
+##Data Cleaning Code
+
+```{r}
+library(tidyverse)
+csvURL <- "https://query.data.world/s/wr2fgmgsybmfkjmsxkuy5alpep5gzh"
+df <- read_csv(csvURL, col_types = list(
+  drg_definition = col_character(),
+  provider_id = col_number(),
+  provider_name = col_character(),
+  provider_street_address = col_character(),
+  provider_city = col_character(),
+  provider_state = col_character(),
+  provider_zip_code = col_number(),
+  hospital_referral_region_description = col_character(),
+  total_discharges = col_number(),
+  average_covered_charges = col_double(),
+  average_total_payments = col_double(),
+  average_medicare_payments = col_double(),
+  summary_level = col_number(),
+  state = col_character(),
+  state_fips = col_number(),
+  insured_males_18_25 = col_number(),
+  noninsured_males_18_25 = col_number(),
+  females_18_25_with_insurance = col_number(),
+  females_18_25_without_insurance = col_number()
+))
+
+# Remove non-printable characters from all column values.
+df <- df %>% dplyr::mutate_all(funs(gsub(pattern="[^ -~]", replacement= "", .)))
+
+# Change null values to 'Unknown'.
+df <- df %>% tidyr::replace_na(list(drg_definition = "Unknown",
+                                    provider_id = 0,
+                                    provider_name = "Unknown",
+                                    provider_city = "Unknown",
+                                    provider_street_address = "Unknown",
+                                    provider_state = "Unknown",
+                                    provider_zip_code = 0,
+                                    hospital_referral_region_description = "Unknown",
+                                    total_discharges = 0,
+                                    average_covered_charges = 0.0,
+                                    average_total_payments = 0.0,
+                                    average_medicare_payments = 0.0,
+                                    summary_level = 0,
+                                    state = "Unknown",
+                                    state_fips = 0,
+                                    insured_males_18_25 = 0,
+                                    noninsured_males_18_25 = 0,
+                                    females_18_25_with_insurance = 0,
+                                    females_18_25_without_insurance = 0
+                                    ))
+
+
+# Remove non-printable characters from column names.
+names(df) <- gsub("[^ -~]", "", names(df)) 
+
+# The following write_csv followed immediately by a read_csv, fixes the column types.
+write_csv(df, "healthcare_bongani.csv") # /Users/pcannata/Downloads needs to be changed to a known folder on your machine.
+df <- read_csv("healthcare_bongani.csv", col_types = list(
+  drg_definition = col_character(),
+  provider_id = col_number(),
+  provider_name = col_character(),
+  provider_street_address = col_character(),
+  provider_city = col_character(),
+  provider_state = col_character(),
+  provider_zip_code = col_number(),
+  hospital_referral_region_description = col_character(),
+  total_discharges = col_number(),
+  average_covered_charges = col_double(),
+  average_total_payments = col_double(),
+  average_medicare_payments = col_double(),
+  summary_level = col_number(),
+  state = col_character(),
+  state_fips = col_number(),
+  insured_males_18_25 = col_number(),
+  noninsured_males_18_25 = col_number(),
+  females_18_25_with_insurance = col_number(),
+  females_18_25_without_insurance = col_number()
+))
+# Now save the cleaned data to new.csv
+write_csv(df, "Healthcare_Clean.csv")
+```
+

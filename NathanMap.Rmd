@@ -1,0 +1,94 @@
+---
+title: "Healthcare in the US"
+author: "Group 2 - Rui Ying, Nathan Berryhill, Amy Fang, Max Lau"
+resource_files:
+- .Renviron
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+runtime: shiny
+---
+
+#Load Packages
+This [code chunk](http://rmarkdown.rstudio.com/authoring_rcodechunks.html) loads the packages required to run the R code in the document.
+The last line of this code chunk enables document caching, which is expalined at this [link](http://rmarkdown.rstudio.com/authoring_rcodechunks.html).
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(shiny)
+library(grid)
+library(data.world)
+library(DT)
+library(shinydashboard)
+library(plotly)
+library(lubridate)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+source("DataB.R", local = TRUE)
+
+```
+
+##Map 
+Using [ggplotly](https://www.rdocumentation.org/packages/plotly/versions/4.7.1/topics/ggplotly) and [shinydashborad](https://rstudio.github.io/shinydashboard/structure.html#dynamic-content-1)
+```{r}
+project <- "https://data.world/amyfang/s18-edv-project-4" 
+data.world::set_config(cfg_env("DW_API")) 
+states <- data.world::query(data.world::qry_sql(
+ "   
+	Select distinct state from healthcare_clean
+ "), 
+dataset = project)
+```
+```{r}
+States <- eventReactive(c(input$selectState_1), { 
+  library('stringr')
+  str_c(input$selectState_1, collapse=', ')
+})
+```
+```{r}
+inputPanel(
+  selectInput("selectState_1", label = "Select State",choices = states, multiple=TRUE, selected=c("CA","DC","FL","GA","IL","NJ","NY","OH", "PA","TX" ))
+)
+```
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      #menuItem("Leaflet Map", tabName = "map1", icon = icon("dashboard")),
+      menuItem("Choropleth Map", tabName = "map2", icon = icon("dashboard"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      
+      tabItem(tabName = "map1",
+      p(),
+        source("Map1UI.R",local = TRUE)$value
+      ),
+      # 2. "Choropleth Map" tab content
+      tabItem(tabName = "map2",
+        p(),
+        source("Map2UI.R",local = TRUE)$value
+      )
+    )
+  )
+)
+
+source("Map1Server.R", local = TRUE)
+source("Map2Server.R", local = TRUE)
+
+```
+
+
+

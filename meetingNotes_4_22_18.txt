@@ -1,0 +1,47 @@
+/* Date: 22 Apr 2018 */
+
+Have project done by Tuesday for practice on Wednesday & Thursday
+
+For R Document - Main (interesting) portion [not necessarily in this order]:
+Dashboard 1: DRG's on Median Average Covered Charges [Tableau, Boxplot]
+Dashboard 2: Most 5 Expensive, Bottom 5 Expensive, General Average [R, Bar Charts]
+Dashboard 2A: Same as above, but as Tableau Dashboard [Tableau, Dashboard]
+Dashboard 3: Three Scatterplots (most expensive, least expensive, general for Maryland) [R, scatterplot]
+Dashboard 3A: Same as above but as Tableau Dashboard [Tableau, Dashboard]
+
+Dashboard 4: Map/Chloroplith of Out of Pocket Costs per Patient per State [R if possible, Map]
+
+Dashboard 5: Avg. Ratio of Coverage vs Total Discharges [R or Tableau, Scatterplot]
+
+Uninteresting/Just for Requirements:
+Dashboard 6: Discharges by DRG [R, Crosstab]
+Dashboard 7: Count of Ratio - Average Medicare Payment over Average Covered Charges [Tableau, Histogram]
+Dashboard 8: Total Payment over Total Covered Charges for Expensive DRGs [Tableau, Crosstab/KPI]
+
+top 5:
+207
+870
+853
+246
+329
+
+Bottom 5:
+310
+303
+897
+313
+301
+
+Requirements:
+Boxplots
+Scatterplots
+Bar Charts
+Histograms
+Crosstab
+Pages
+Analytics/Dual Axis/Changing Aggregate Function
+Table Calculation
+Maps / Dashboard
+KPI / Calculated Field
+Level of Detail Calculation
+Combine with Census Data

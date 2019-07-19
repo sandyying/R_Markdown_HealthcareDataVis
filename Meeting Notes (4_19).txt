@@ -1,0 +1,37 @@
+Notes
+
+Focus on the top 3 DRGs (from Nathan's crosstab)
+Focus on the 4 most expensive DRGs (from Nathan's boxplots)
+Examine if the ratio of coverage is the same amongst all states for each DRG
+Do other stuff (from all of the chapters) with each DRG to see if there's a pattern or not amongst coverage
+(Does one state consistently cover more than the others?)
+
+
+Most commonly discharged DRGs
+1. 470
+2. 392
+3. 194
+
+Most expensive DRGs
+1. 207
+2. 329
+3. 853
+5. 870
+
+Cheapest DRGs
+
+1. 313
+2. 310
+3. 303
+4. 305
+
+Sandy: scatterplot
+Max: histogram
+Amy: bar chart (differences, percentage, etc.)
+
+
+Flow of the R Document
+
+Boxplot with average covered charges
+Dashboard (bar charts)
+

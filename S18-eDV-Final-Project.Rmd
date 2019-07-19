@@ -1,0 +1,492 @@
+---
+title: "Healthcare in the United States"
+author: "Authored by: Rui(Sandy) Ying, Nathan Berryhill, Amy Fang, Max Lau (Group 2)"
+resource_files:
+- .Renviron
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+runtime: shiny
+---
+#Introduction
+For this project, we chose a dataset on healthcare because healthcare costs are a source of much strife in both the political realm and the lives of millions of Americans. According to the [World Health Organization](http://www.who.int/countries/usa/en/), the United States spent more on health care per capita ($9,403), and more on health care as percentage of its GDP (17.1%), than any other nation in 2014. Our motivation is that we want to visualize how much Americans are paying for their healthcare, which states tend to pay the most, and possible drivers of healthcare costs, like insurance coverage and actual diagnoses and conditions.
+
+Specifically, we want to show how healthcare costs vary around the country (depending on the condition treated as well as the amount covered by insurance), how out of pocket costs to the patient vary, and how amounts covered by Medicare vary. Throughout this document, we aim to discern a relationship between location and healthcare costs.
+
+The boxplot explores which diagnosis-related group (DRG) costs the most in the United States. The bar charts show which states have the highest ratio of medicare coverage. Our scatterplots aims to explore the relationship between the average charge of the hospitals and the payment MediCare makes. We found that Maryland, of all the states, has the highest correlation between the two. The histogram displays which coverage ratio contains the most instances. Our choropleth map shows which states have the highest average out-of-pocket-cost to the patient. Uninterestingly, Alaska is one of the top states, however interestingly enough, Wyoming of all the states comes out on the top of the list. Our second bar chart shows the number of DRGs being provided by a number of cities. The crosstab shows the most popular DRG by the number of discharges associated with it.
+
+DRG - Diagnosis-Related Group
+Average Covered Charges: The amount that the provider (hospital) charges for a covered services under MediCare.
+Average Medicare Payments: The amount that MediCare pays.
+Average Total Payments: The amount that MediCare pays + patient's co-payment
+Average Covered Charges - Average Total Payments = DRG-Provider's loss
+
+##Data.World Project and GitHub Links
+Our dataset project files and insights are found on
+[data.world](https://data.world/nrb842/s18-edv-final-project)
+
+Our files and version control handling is maintained by [Github](https://github.com/CannataUTDV/s18dvfinalproject-fang-berryhill-ying-lau)
+
+##Load Packages
+This [code chunk](http://rmarkdown.rstudio.com/authoring_rcodechunks.html) loads the packages required to run the R code in the document.
+The last line of this code chunk enables document caching, which is explained at this [link](http://rmarkdown.rstudio.com/authoring_rcodechunks.html).
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(shiny)
+library(grid)
+library(data.world)
+library(DT)
+library(shinydashboard)
+library(plotly)
+library(lubridate)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("DataSandy1.R", local = TRUE)
+source("DataSandy2.R", local = TRUE)
+source("DataSandy3.R", local = TRUE)
+source("DataB.R", local = TRUE)
+source("DataExpensiveBar.R", local = TRUE)
+source("DataCheapBar.R", local = TRUE)
+source("DataHist.R", local = TRUE)
+source("DataA.R", local = TRUE)
+source("DataBar.R", local = TRUE)
+```
+
+#Visualizations
+## DRG's by Median Average Covered Charge
+What we'd like to demonstrate with this graph is a list of all the diagnosis-related groups in our dataset sorted by their respective medians. We chose to exhibit this with a box plot because we wanted to find and then explore more of the DRGs that have outliers. To get a good impression of the data, we chose to explore the top 5 DRGs and the bottom 5 DRGs. The top 5 diagnosis groups include Respiratory System Diagnosis with Ventilator Support, Septicemia or Severe Sepsis, Infectious and Parastitic Diseases, Cardiovascular Procedures, and Major Small & Large Bowel Procedures. The bottom 5 diagnosis groups include Peripheral Vascular Disorder, Chest Pain, Alcohol/Drug Abuse, Atherosclerosis, and Cardiac Arrythmia & Conduction Disorders.
+
+Insight Link: [DRG's on Median Average Covered Charges](https://data.world/nrb842/s18-edv-final-project/insights/430804af-fe4f-455b-9298-34951d676b81)
+<iframe src="https://public.tableau.com/views/Final_312/Sheet5B?:showVizHome=no" width="800" height="500"></iframe>
+
+```{r}
+project <- "https://data.world/nrb842/s18-edv-final-project" 
+data.world::set_config(cfg_env("DW_API")) 
+states <- data.world::query(data.world::qry_sql(
+ "   
+	Select distinct state from healthcare_clean
+ "), 
+dataset = project)
+```
+```{r}
+States <- eventReactive(c(input$selectState_1), { 
+  library('stringr')
+  str_c(input$selectState_1, collapse=', ')
+})
+```
+
+## DRGs Ratio of Coverage by State
+From the graph before, we are able to discern the 5 most expensive DRGs and the 5 cheapest DRGs, based on their respecive medians. Our group wanted to visualize the average ratio of coverage - the amount medicare pays divided by the total cost to treat the DRG - and see if it differed among States. We take this further to see if there is a distinction between ratio of coverage for the most expensive conditions and the least expensive conditions.
+
+In Tableau, we were able to hone in on states where instances of both the most expensive and cheapest DRGs were found. From there, we show that in both charts Maryland overwhelmingly has the highest ratio of coverage while New Jersey on the other hand had the lowest coverage ratio. Interestingly, we discovered in the dashboard which follows that on average, there is a higher than average coverage for the most expensive conditions, yet we see a less than average coverage on the least expensive conditions. This went against our initial intuition! We thought that insurances would cover more of the least expensive conditions and less of the most expensive ones.
+
+Insight Link: [Bar Chart - Most Expensive DRG's Aggregated Ratio of Coverage by State](https://data.world/nrb842/s18-edv-final-project/insights/73e2246f-de0a-474b-ae43-836c8a5f6d65)
+
+Insight Link: [Bar Chart - Cheapest DRG's Aggregated Ratio of Coverage by State](https://data.world/nrb842/s18-edv-final-project/insights/bf5018d5-3dd9-4e07-9e12-0da1b637f140)
+
+```{r}
+inputPanel(
+  selectInput("selectState_1", label = "Select State",choices = states, multiple=TRUE, selected=c('AK', 'AL', 'AR', 'CO', 'CT', 'DC', 'DE', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'MA', 'MD', 'MI', 'MO', 'MT', 'NC', 'ND', 'NJ', 'OH', 'PA', 'RI', 'SD', 'TN', 'TX', 'VA', 'VT', 'WV', 'WY'))
+)
+```
+
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      
+      menuItem("Top 5 Most Expensive DRGs' Ratio of Coverage by State", tabName = "bar_expensive", icon = icon("dashboard")),
+      menuItem("Top 5 Cheapest DRGs' Ratio of Coverage by State", tabName = "bar_cheap", icon = icon("dashboard"))
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      
+      tabItem(tabName = "bar_expensive",
+        p(),
+        source("ExpensiveBarChartUI.R",local = TRUE)$value
+      ),
+      tabItem(tabName = "bar_cheap",
+        p(),
+        source("CheapBarChartUI.R",local = TRUE)$value
+      )
+    )
+  )
+)
+source("ExpensiveBarChartServer.R", local = TRUE)
+source("CheapBarServer.R", local = TRUE)
+
+```
+Insight Link: [Bar Chart Dashboard](https://data.world/nrb842/s18-edv-final-project/insights/8f02be30-be5a-4ef4-b938-d4b494f98f9e)
+<iframe src="https://public.tableau.com/views/Final_312/Dashboard1?:showVizHome=no" width="800" height="500"></iframe>
+
+## Avg Covered Charge vs MediCare Payments - Top 5 & Bottom 5 Drg
+
+The following two charts show scatter plots for the top 5 most expensive drg-definitions and the top 5 least expensive drg-definitions. The x-axis is the Average-Covered-Charges and the y-axis is the Average-Medicare-Payments. The points are mostly clustered together, but we can still see a positive relationship between Average-Covered-Charges and Average-Medicare-Payment. What this tells us is that as the covered charges increases, the medicare payment increases as well. This is consistently seen throughout the data and not on specific instances. This relationship is much stronger for top 5 most expensive drg definitions than for the top 5 least expensive drg-definitions.
+
+```{r}
+inputPanel(sliderInput("selectRange8", label = "Average_Medicare_Payments: ", min=0, max=158000, value=c(0,100000), step=2000))
+```
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Avg Covered Charges VS. Avg Medicare Payment - Top 5 Most Expensive Drg", tabName = "scatter1", icon = icon("dashboard")),
+       menuItem("Avg Covered Charges VS. Avg Medicare Payment - Bottom 5 Least Expensive Drg", tabName = "scatter2", icon = icon("dashboard"))
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      tabItem(tabName = "scatter1",
+        p(),
+        source("ScatterPlot1UI.R",local = TRUE)$value
+      
+      ),
+      tabItem(tabName = "scatter2",
+        p(),
+        source("ScatterPlot2UI.R",local = TRUE)$value
+      
+      )
+      
+    )
+  )
+)
+source("ScatterPlot1Server.R", local = TRUE)
+source("ScatterPlot2Server.R", local = TRUE)
+
+
+```
+
+To have a closer look, the Tableau iFrame below shows the scatter plots for each DRG separately. The default setting is "all states" but readers may select each state individually. After some exploration by selecting each state, we found that for most states, the relationship between average covered charges and average medicare is actually kind of random. The map shows the states that are providing for that specific DRG. As a consequence of our dataset, not all the states report providing for every single DRG.
+
+Insight Link: [Top 5 Most Expensive DRG Definition Scatterplot](https://data.world/nrb842/s18-edv-final-project/insights/90adce04-abad-4413-afaa-4313ff67f0f5)
+<iframe src="https://public.tableau.com/shared/589WZJ3GQ?:showVizHome=no" width="800" height="500"></iframe>
+Insight Link: [Bottom 5 Least Expensive DRG Definition Scatterplot](https://data.world/nrb842/s18-edv-final-project/insights/afb5369a-f6ef-4dbe-ae6c-a1e2c733aad2)
+<iframe src="https://public.tableau.com/views/TOP5LeastExpensiveDrgDefinition/Bottom5-D?:showVizHome=no" width="800" height="500"></iframe>
+
+## Avg Covered Charge vs MediCare Payments - MD
+
+Interestingly enough,  Maryland has a very strong relationship between these two variables, average covered charges and average Medicare payment. Maryland has a nearly one-to-one relationship. The R-squared value is extremely close to 1.0 (R^2 = 0.997) and the p-value is overwhelmingly less than 0.05, so we are able to say our model fits the data extremely well, and there is a strong correlation between the average charge from the hospital or provider and the payments made by Medicare.
+
+The x axis of histogram is coverage ratio and y axis is the count of ration. It is colored by state. In most states, the ratio is spread from 0 to 0.5. But for Maryland, the ratio is clustering from 0.75 to 0.9. It indicates that medicare coverage is high and consistent in Maryland.
+
+Insight Link: [Count of Coverage Ratio - Maryland](https://data.world/nrb842/s18-edv-final-project/insights/0ef28e70-7326-43e8-b582-9090e11204f0)
+```{r}
+project <- "https://data.world/nrb842/s18-edv-final-project" 
+data.world::set_config(cfg_env("DW_API")) 
+states2 <- data.world::query(data.world::qry_sql(
+ "   
+	Select distinct state from healthcare_clean
+ "), 
+dataset = project)
+```
+```{r}
+States2 <- eventReactive(c(input$selectState_2), { 
+  library('stringr')
+  str_c(input$selectState_2, collapse=', ')
+})
+```
+```{r}
+inputPanel(
+  selectInput("selectState_2", label = "Select State",choices = states2, multiple=TRUE, selected=c("AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL", "GA","HI","IA",                                     "ID","IL","IN","KS","KY","LA","MA","MD", "ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ", "NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN", "TX","UT","VA","VT","WA","WI", "WV","WY"))
+)
+```
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Avg Covered Charges VS. Avg Medicare Payment - Maryland", tabName = "scatter3", icon = icon("dashboard")),
+      menuItem("Count of Coverage Ratio - Maryland", tabName = "histogram", icon = icon("dashboard"))
+     
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "scatter3",
+        p(),
+        source("ScatterPlot3UI.R",local = TRUE)$value
+      
+      ),
+      tabItem(tabName = "histogram",
+        p(),
+        source("HistogramUI.R",local = TRUE)$value
+      
+      )
+      
+    )
+  )
+)
+source("ScatterPlot3Server.R", local = TRUE)
+source("HistogramServer.R", local = TRUE)
+
+
+```
+The Tableau iFrame below is mainly demonstrating a similar result, however we have added pages so that the relationship for each DRG in Maryland can be visualized. We can consistently see a strong relationship in terms of the r-squared and p-values for each DRG. With this, we can accurately predict the Medicare payment based on the charge by the hospital or provider.
+
+Insight Link: [Avg Covered Charges VS. Avg Medicare Payment - Maryland](https://data.world/nrb842/s18-edv-final-project/insights/6e5535a7-078f-4d73-881c-e0a055d00a37)
+<iframe src="https://public.tableau.com/views/AvgCoveredChargesVS_AvgMedicarePaymentInMD/Sheet8?:showVizHome=no" width="800" height="500"></iframe>
+
+##Average Out-of-Pocket Cost to Patient by State
+Using [ggplotly](https://www.rdocumentation.org/packages/plotly/versions/4.7.1/topics/ggplotly) and [shinydashborad](https://rstudio.github.io/shinydashboard/structure.html#dynamic-content-1)
+We define the out-of-pocket cost per patient as the sum of all charges by the providers subtract the sum of medicare payments and divide this by the sum of discharges. We then group this result by state to obtain a choropleth map. Choropleth maps provide an easy way to visualize how a measurement varies across a geographic area or show the level of variability within a region. Our choropleth map shows which states have the highest average out-of-pocket-cost to the patient. Uninterestingly, a state like Alaska is one of the top states for the highest average - but interestingly enough, Alaska does not top the list for the actual highest - Wyoming of all the states comes out on the top, with an average out-of-pocket-cost of over $79, and this came as a surprise to us as Wyoming is not a very populated midwestern state with a population at just over 570,000, from the US Census Bureau data provided.
+
+Insight Link: [Out of Pocket Costs per Patient by State](https://data.world/nrb842/s18-edv-final-project/insights/e1a1a7ff-d1d0-446d-9fe7-eb175b4bbb40)
+```{r}
+project <- "https://data.world/nrb842/s18-edv-final-project" 
+data.world::set_config(cfg_env("DW_API")) 
+states3 <- data.world::query(data.world::qry_sql(
+ "   
+	Select distinct state from healthcare_clean
+ "), 
+dataset = project)
+```
+```{r}
+States3 <- eventReactive(c(input$selectState_3), { 
+  library('stringr')
+  str_c(input$selectState_3, collapse=', ')
+})
+```
+```{r}
+inputPanel(
+ selectInput("selectState_3", label = "Select State",choices = states3, multiple=TRUE, selected=c("AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL", "GA","HI","IA",                                     "ID","IL","IN","KS","KY","LA","MA","MD", "ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ", "NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN", "TX","UT","VA","VT","WA","WI", "WV","WY"))
+)
+```
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      #menuItem("Leaflet Map", tabName = "map1", icon = icon("dashboard")),
+      menuItem("Choropleth Map", tabName = "map2", icon = icon("dashboard"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      
+      tabItem(tabName = "map1",
+      p(),
+        source("Map1UI.R",local = TRUE)$value
+      ),
+      # 2. "Choropleth Map" tab content
+      tabItem(tabName = "map2",
+        p(),
+        source("Map2UI.R",local = TRUE)$value
+      )
+    )
+  )
+)
+
+source("Map1Server.R", local = TRUE)
+source("Map2Server.R", local = TRUE)
+
+```
+
+## Avg Coverage Ratio vs Total Discharges
+This Tableau iFrame is not necessarily pertinent to our discussion on healthcare, but it is still an interesting discovery as this also went against our initial intuition. We had the hypothesis that as the avg coverage ratio increases, then the number of discharges would increase - again this is our initial intuition simply thinking about costs and when they are removed for a service, we thought we would see more instances of use for that service. However, we do not see this at all - in fact, we see the opposite occur. Our data model shows, although it isn't a very strong nor statistically significant model, that as the average coverage ratio increases, the total number of discharges actually decreases.
+
+Insight Link: [Avg. Ratio of Coverage vs Total Discharges](https://data.world/nrb842/s18-edv-final-project/insights/a16d43aa-ca10-48cf-9441-6d06f86ac3e0)
+<iframe src="https://public.tableau.com/views/Avg_RatioofCoveragevsTotalDischarges/Avg_RatioofCoveragevsTotalDischarges?:showVizHome=no" width="800" height="500"></iframe>
+
+
+## More on Avg Coverage Ratio - MD
+Below is a Tableau iFrame which shows the coverage ratios for each DRG in Maryland. Readers may choose to include other states, however we focus on Maryland because Maryland consistently has some of the highest, if not the highest, average coverage ratios for each DRG.
+
+Insight Link: [KPI - Avg Coverage Ratio  ](https://data.world/nrb842/s18-edv-final-project/insights/fbd52953-13f1-481c-88f0-4a65152239ef)
+<iframe src="https://public.tableau.com/views/PercentageofPaymentcoveredByMedicare/Sheet1?:showVizHome=no" width="800" height="500"></iframe>
+
+## DRG Specific Data
+Below is another Tableau iFrame which details in the bin the number of DRGs being provided. When the histogram is hovered over a block, it will display additonal information as to the state, the number of providers, and the number of DRGs. This graph shows the level of detail calculation. We fixed city and counted the number of drg by city. The axis is the distinct count and y axis is the count of distinct city for each count. And this is colored by state. The way to read this for example is as follows: California has 143 cities that have 11 distinct instances of a DRG. From the color, we can see that bigger cities are providing more drg.
+
+Insight Link: [How Many Cities Providing How Many Drg By State](https://data.world/nrb842/s18-edv-final-project/insights/92fedbc8-3372-4e13-8583-de4515c99ba1)
+<iframe src="https://public.tableau.com/views/HowManyDRGareProvidedbyHowManyCities-/Sheet1?:showVizHome=no" width="800" height="500"></iframe>
+
+##Number of Discharges by Drg Definition
+
+```{r}
+inputPanel(sliderInput("selectDrg", label = "Select discharge: ", min=0, max=162000, value=c(100000,162000), step=1000))
+```
+Lastly, but certainly not least, we have a crosstab made in R. What we aim to visualize here is like a heat map of the number of discharges grouped by the diagnosis group. We use a crosstab to easily see the most popular diagnosis groups by their total number of discharges. The lighter blue the geomTile is, the greater the total number of discharges. This crosstab clearly demonstrates that Joint Replacement and Esophagitis are the most popular diagnosis groups. However, the reader may use the slider above to filter on the total number of discharges.
+
+Insight Link: [Number of Discharges by Drg Definition](https://data.world/nrb842/s18-edv-final-project/insights/fbd52953-13f1-481c-88f0-4a65152239ef)
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Number of Discharges by Drg Definition", tabName = "crosstab", icon = icon("dashboard"))
+     
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # 1. "Profit vs Sales Scatter Plot" tab content
+      tabItem(tabName = "crosstab",
+        p(),
+        source("Crosstab1UI.R",local = TRUE)$value
+      
+      )
+    )
+  )
+)
+source("Crosstab1Server.R", local = TRUE)
+
+```
+
+##Average Covered Charges Per Capita
+```{r}
+project <- "https://data.world/nrb842/s18-edv-final-project" 
+data.world::set_config(cfg_env("DW_API")) 
+states4 <- data.world::query(data.world::qry_sql(
+ "   
+	Select distinct state from healthcare_clean
+ "), 
+dataset = project)
+```
+```{r}
+States4 <- eventReactive(c(input$selectState_4), { 
+  library('stringr')
+  str_c(input$selectState_4, collapse=', ')
+})
+```
+```{r}
+inputPanel(
+  selectInput("selectState_4", label = "Select State",choices = states4, multiple=TRUE, selected=c("CA","DC","FL","GA","IL","NJ","NY","OH", "PA","TX" ))
+)
+```
+
+```{r}
+dashboardPage(
+  dashboardHeader(
+  ),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Covered Charges Per Capita", tabName = "bar", icon = icon("dashboard"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+     
+      tabItem(tabName = "bar",
+        p(),
+        source("BarChart1UI.R",local = TRUE)$value
+      )
+    )
+  )
+)
+source("BarChart1Server.R", local = TRUE)
+```
+
+#Appendix
+##Display Session Information
+The [sessionInfo() fuction](https://cran.r-project.org/web/packages/sessioninfo/sessioninfo.pdf) queries and prints information about the current R session including  information about packages, and from where they were installed.
+```{r}
+sessionInfo()
+```
+##Data Cleaning Code
+
+```{r}
+library(tidyverse)
+csvURL <- "https://query.data.world/s/wr2fgmgsybmfkjmsxkuy5alpep5gzh"
+df <- read_csv(csvURL, col_types = list(
+  drg_definition = col_character(),
+  provider_id = col_number(),
+  provider_name = col_character(),
+  provider_street_address = col_character(),
+  provider_city = col_character(),
+  provider_state = col_character(),
+  provider_zip_code = col_number(),
+  hospital_referral_region_description = col_character(),
+  total_discharges = col_number(),
+  average_covered_charges = col_double(),
+  average_total_payments = col_double(),
+  average_medicare_payments = col_double(),
+  summary_level = col_number(),
+  state = col_character(),
+  state_fips = col_number(),
+  insured_males_18_25 = col_number(),
+  noninsured_males_18_25 = col_number(),
+  females_18_25_with_insurance = col_number(),
+  females_18_25_without_insurance = col_number()
+))
+
+# Remove non-printable characters from all column values.
+df <- df %>% dplyr::mutate_all(funs(gsub(pattern="[^ -~]", replacement= "", .)))
+
+# Change null values to 'Unknown'.
+df <- df %>% tidyr::replace_na(list(drg_definition = "Unknown",
+                                    provider_id = 0,
+                                    provider_name = "Unknown",
+                                    provider_city = "Unknown",
+                                    provider_street_address = "Unknown",
+                                    provider_state = "Unknown",
+                                    provider_zip_code = 0,
+                                    hospital_referral_region_description = "Unknown",
+                                    total_discharges = 0,
+                                    average_covered_charges = 0.0,
+                                    average_total_payments = 0.0,
+                                    average_medicare_payments = 0.0,
+                                    summary_level = 0,
+                                    state = "Unknown",
+                                    state_fips = 0,
+                                    insured_males_18_25 = 0,
+                                    noninsured_males_18_25 = 0,
+                                    females_18_25_with_insurance = 0,
+                                    females_18_25_without_insurance = 0
+                                    ))
+
+
+# Remove non-printable characters from column names.
+names(df) <- gsub("[^ -~]", "", names(df)) 
+
+# The following write_csv followed immediately by a read_csv, fixes the column types.
+write_csv(df, "healthcare_bongani.csv") # /Users/pcannata/Downloads needs to be changed to a known folder on your machine.
+df <- read_csv("healthcare_bongani.csv", col_types = list(
+  drg_definition = col_character(),
+  provider_id = col_number(),
+  provider_name = col_character(),
+  provider_street_address = col_character(),
+  provider_city = col_character(),
+  provider_state = col_character(),
+  provider_zip_code = col_number(),
+  hospital_referral_region_description = col_character(),
+  total_discharges = col_number(),
+  average_covered_charges = col_double(),
+  average_total_payments = col_double(),
+  average_medicare_payments = col_double(),
+  summary_level = col_number(),
+  state = col_character(),
+  state_fips = col_number(),
+  insured_males_18_25 = col_number(),
+  noninsured_males_18_25 = col_number(),
+  females_18_25_with_insurance = col_number(),
+  females_18_25_without_insurance = col_number()
+))
+# Now save the cleaned data to new.csv
+write_csv(df, "Healthcare_Clean.csv")
+```
